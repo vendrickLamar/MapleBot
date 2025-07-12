@@ -13,11 +13,13 @@ class PlayerInputs:
 
     @staticmethod
     def move_right():
+        print("Moving right...")
         pydirectinput.keyDown('right')
         time.sleep(0.1)
 
     @staticmethod
     def move_left():
+        print("Moving left...")
         pydirectinput.keyDown('left')
         time.sleep(0.3)
 

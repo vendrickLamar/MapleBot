@@ -1,29 +1,36 @@
-from time import time
+import time
 import cv2 as cv
 import numpy as np
 
 from vision.screen_capture import WindowCapture
 from vision.detection import Vision
-
+from vision.hsv_filter import HsvFilter
+from controller.inputs import PlayerInputs
 wincap = WindowCapture()
-loop_time = time()
-vision_chronos = Vision('chronos.png')
+loop_time = time.time()
+vision_chronos = Vision('chronos_hsv_filter.png')
+hsv_filter = HsvFilter(h_min=0, s_min=0,v_min=98, h_max=179, s_max=123, v_max=255, s_add=59, s_sub=107, v_add=25, v_sub=57)
+# vision_chronos.init_control_gui()
 while True:
 
     # get an updated image of the game
     screenshot = wincap.get_screenshot()
+    # pre-process the image
+    processed_image = vision_chronos.apply_hsv_filter(screenshot, hsv_filter)
     # do object detection
-    rectangles = vision_chronos.find(screenshot, threshold=0.5)
-
+    rectangles = vision_chronos.find(processed_image, threshold=0.6)
+    points = vision_chronos.get_click_points(rectangles)
+    print(f'Monsters detected: {len(points)}')
     #draw the detection results onto the original image
-    output_image = vision_chronos.draw_rectangles(screenshot, rectangles)
+    # output_image = vision_chronos.draw_corsairs(processed_image, points)
 
     # display the processed image
-    cv.imshow('Matches', output_image)
+    # cv.imshow('Matches', output_image)
+    # cv.imshow('Processed Image', processed_image)
 
     # debug the loop rate
-    print('FPS {}'.format(1 / (time() - loop_time)))
-    loop_time = time()
+    # print('FPS {}'.format(1 / (time() - loop_time)))
+    # loop_time = time()
 
     # press 'q' with the output window focused to exit.
     # waits 1 ms every loop to process key presses
