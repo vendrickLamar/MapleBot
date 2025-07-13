@@ -28,7 +28,7 @@ while True:
     # draw the detection results onto the original image
     detection_image = vision_chronos.draw_rectangles(screenshot, rectangles)
 
-    # display the images
+    # display the images.
     cv.imshow('Matches', detection_image)
 
     # take bot actions
