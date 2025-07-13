@@ -1,11 +1,10 @@
 import cv2 as cv
 import numpy as np
-import os
-from time import time, sleep
+from time import time
 from vision.screen_capture import WindowCapture
 from vision.detection import Vision
 from controller.inputs import PlayerInputs, MouseInputs
-
+from threading import Thread
 
 # initialize the WindowCapture class
 wincap = WindowCapture('MapleStory')
@@ -17,6 +16,16 @@ vision_chronos = Vision(None)
 player_inputs = PlayerInputs()
 mouse_inputs = MouseInputs()
 loop_time = time()
+
+is_bot_in_action: bool = False
+
+def bot_actions(target_rectangles: np.ndarray):
+    # take bot actions
+    global is_bot_in_action
+    if len(target_rectangles) > 0:
+        print('Executing Bot actions')
+        player_inputs.use_skill()
+    is_bot_in_action = False
 while True:
 
     # get an updated image of the game
@@ -30,14 +39,11 @@ while True:
 
     # display the images.
     cv.imshow('Matches', detection_image)
-
-    # take bot actions
-    if len(rectangles) > 0:
-        targets = vision_chronos.get_click_points(rectangles)
-        target = wincap.get_screen_position(targets[0])
-        player_inputs.use_skill()
-
-
+    # run the function in a thread that's separate from the main thread
+    if not is_bot_in_action:
+        is_bot_in_action = True
+        t = Thread(target=bot_actions, args=(rectangles,))
+        t.start()
 
 
     # debug the loop rate
@@ -45,7 +51,7 @@ while True:
     loop_time = time()
 
     # press 'q' with the output window focused to exit.
-    # press 'f' to save screenshot as a positive image, press 'd' to
+    # press 'f' to save a screenshot as a positive image, press 'd' to
     # save as a negative image.
     # waits 1 ms every loop to process key presses
     key = cv.waitKey(1)
