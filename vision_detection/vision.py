@@ -20,7 +20,7 @@ class Vision:
         self.needle_h = self.needle_img.shape[0]
        self.method = method
 
-    def find(self,haystack_img, threshold: float = 0.5, max_results: int=10):
+    def find(self,haystack_img, threshold: float = 0.5, max_results: int=30):
         # if len(haystack_img.shape) == 3:
         #     haystack_img = cv.cvtColor(haystack_img, cv.COLOR_BGR2GRAY)
         result = cv.matchTemplate(haystack_img,self.needle_img, self.method)
@@ -57,9 +57,9 @@ class Vision:
         return points
 
     @staticmethod
-    def draw_rectangles(haystack_img, rectangles):
+    def draw_rectangles(haystack_img, rectangles, color=(0, 0, 255)):
         if len(rectangles):
-            line_color = (0, 0, 255)
+            line_color = color
             line_type = cv.LINE_4
 
             for (x,y,w,h) in rectangles:
@@ -210,9 +210,3 @@ class Vision:
         img = cv.cvtColor(result, cv.COLOR_GRAY2BGR)
 
         return img
-
-
-
-
-
-

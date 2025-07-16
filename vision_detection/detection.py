@@ -35,8 +35,15 @@ class Detection:
         # TODO: you can write your own time/iterations calculation to determine how fast this is
         while not self.stopped:
             if not self.screenshot is None:
-                # do object detection
-                rectangles = self.cascade.detectMultiScale(self.screenshot)
+                # do object detection with improved parameters
+                # Parameters: image, scaleFactor, minNeighbors, flags, minSize, maxSize
+                rectangles = self.cascade.detectMultiScale(
+                    self.screenshot,
+                    scaleFactor=1.05,  # Smaller scale factor to detect more objects
+                    minNeighbors=3,    # Minimum number of neighbors
+                    minSize=(20, 20),  # Minimum size of detected objects
+                    flags=cv.CASCADE_SCALE_IMAGE
+                )
                 # lock the thread while updating the results
                 self.lock.acquire()
                 self.rectangles = rectangles

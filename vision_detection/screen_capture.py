@@ -1,14 +1,14 @@
-from time import time
-
 import numpy as np
-import win32gui, win32ui
-import win32.lib.win32con as win32con
-import cv2 as cv
-
+import win32gui, win32ui, win32con
+from threading import Thread, Lock
 
 
 class WindowCapture:
 
+    # threading properties
+    stopped = True
+    lock = None
+    screenshot = None
     # properties
     w = 0
     h = 0
@@ -18,27 +18,35 @@ class WindowCapture:
     offset_x = 0
     offset_y = 0
 
-    def __init__(self, window_name="MapleStory", capture_w=None, capture_h=None, start_x=0, start_y=0):
-        self.hwnd = win32gui.FindWindow(None, window_name)
+    # constructor
+    def __init__(self, window_name=None):
+        # create a thread lock object
+        self.lock = Lock()
 
-        if not self.hwnd:
-            raise Exception('Window not found: {}'.format(window_name))
+        # find the handle for the window we want to capture.
+        # if no window name is given, capture the entire screen
+        if window_name is None:
+            self.hwnd = win32gui.GetDesktopWindow()
+        else:
+            self.hwnd = win32gui.FindWindow(None, window_name)
+            if not self.hwnd:
+                raise Exception('Window not found: {}'.format(window_name))
 
+        # get the window size
         window_rect = win32gui.GetWindowRect(self.hwnd)
-        full_w = window_rect[2] - window_rect[0]
-        full_h = window_rect[3] - window_rect[1]
+        self.w = window_rect[2] - window_rect[0]
+        self.h = window_rect[3] - window_rect[1]
 
+        # account for the window border and titlebar and cut them off
         border_pixels = 8
         titlebar_pixels = 30
-        content_w = full_w - (border_pixels * 2)
-        content_h = full_h - titlebar_pixels - border_pixels
-        self.cropped_x = border_pixels + start_x
-        self.cropped_y = titlebar_pixels + start_y
+        self.w = self.w - (border_pixels * 2)
+        self.h = self.h - titlebar_pixels - border_pixels
+        self.cropped_x = border_pixels
+        self.cropped_y = titlebar_pixels
 
-        # Use full content area unless capture size is specified
-        self.w = capture_w if capture_w else content_w - start_x
-        self.h = capture_h if capture_h else content_h - start_y
-
+        # set the cropped coordinates offset so we can translate screenshot
+        # images into actual screen positions
         self.offset_x = window_rect[0] + self.cropped_x
         self.offset_y = window_rect[1] + self.cropped_y
 
@@ -66,7 +74,7 @@ class WindowCapture:
         win32gui.DeleteObject(dataBitMap.GetHandle())
 
         # drop the alpha channel, or cv.matchTemplate() will throw an error like:
-        #   error: (-215: Assertion failed) (depth == CV_8U || depth == CV_32F) && type == _templ.type()
+        #   error: (-215:Assertion failed) (depth == CV_8U || depth == CV_32F) && type == _templ.type() 
         #   && _img.dims() <= 2 in function 'cv::matchTemplate'
         img = img[...,:3]
 
@@ -84,10 +92,10 @@ class WindowCapture:
     # https://stackoverflow.com/questions/55547940/how-to-get-a-list-of-the-name-of-every-open-window
     @staticmethod
     def list_window_names():
-        def win_enum_handler(hwnd, ctx):
+        def winEnumHandler(hwnd, ctx):
             if win32gui.IsWindowVisible(hwnd):
                 print(hex(hwnd), win32gui.GetWindowText(hwnd))
-        win32gui.EnumWindows(win_enum_handler, None)
+        win32gui.EnumWindows(winEnumHandler, None)
 
     # translate a pixel position on a screenshot image to a pixel position on the screen.
     # pos = (x, y)
@@ -95,4 +103,24 @@ class WindowCapture:
     # return incorrect coordinates, because the window position is only calculated in
     # the __init__ constructor.
     def get_screen_position(self, pos):
-        return pos[0] + self.offset_x, pos[1] + self.offset_y
+        return (pos[0] + self.offset_x, pos[1] + self.offset_y)
+
+    # threading methods
+
+    def start(self):
+        self.stopped = False
+        t = Thread(target=self.run)
+        t.start()
+
+    def stop(self):
+        self.stopped = True
+
+    def run(self):
+        # TODO: you can write your own time/iterations calculation to determine how fast this is
+        while not self.stopped:
+            # get an updated image of the game
+            screenshot = self.get_screenshot()
+            # lock the thread while updating the results
+            self.lock.acquire()
+            self.screenshot = screenshot
+            self.lock.release()
