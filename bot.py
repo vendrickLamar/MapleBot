@@ -70,7 +70,7 @@ class MapleBot:
             self.player_inputs.attack()
         sleep(0.01)
 
-    def xxxsearch_targets(self):
+    def search_targets(self):
         """ Execute movements to search for targets """
         print("Searching for monsters...")
         self.player_inputs.move_right()

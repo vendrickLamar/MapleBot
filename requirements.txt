@@ -1,0 +1,8 @@
+opencv-python>=4.5.0
+numpy>=1.19.0
+pyautogui>=0.9.50
+keyboard>=0.13.5
+PyGetWindow>=0.0.9
+Pillow>=8.0.0
+pywin32>=300
+PyDirectInput>=1.0.4
